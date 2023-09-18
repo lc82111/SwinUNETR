@@ -22,9 +22,11 @@ from torch.cuda.amp import GradScaler, autocast
 from utils.utils import AverageMeter, distributed_all_gather
 
 from monai.data import decollate_batch
+from monai.visualize.utils import blend_images
+from monai.visualize.img2tensorboard import plot_2d_or_3d_image
 
 
-def train_epoch(model, loader, optimizer, scaler, epoch, loss_func, args):
+def train_epoch(model, loader, optimizer, scaler, epoch, loss_func, args, writer):
     model.train()
     start_time = time.time()
     run_loss = AverageMeter()
@@ -61,6 +63,11 @@ def train_epoch(model, loader, optimizer, scaler, epoch, loss_func, args):
                 "time {:.2f}s".format(time.time() - start_time),
             )
         start_time = time.time()
+
+    if args.rank == 0 and epoch==0:
+        img = blend_images(data[0], target[0])
+        plot_2d_or_3d_image([img], step=epoch, writer=writer, frame_dim=-1, tag="train/gt")
+
     for param in model.parameters():
         param.grad = None
     return run_loss.avg
@@ -157,7 +164,7 @@ def run_training(
         print(args.rank, time.ctime(), "Epoch:", epoch)
         epoch_time = time.time()
         train_loss = train_epoch(
-            model, train_loader, optimizer, scaler=scaler, epoch=epoch, loss_func=loss_func, args=args
+            model, train_loader, optimizer, scaler=scaler, epoch=epoch, loss_func=loss_func, args=args, writer=writer, 
         )
         if args.rank == 0:
             print(

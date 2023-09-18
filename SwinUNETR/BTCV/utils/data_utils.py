@@ -73,6 +73,10 @@ def get_loader(args):
         [
             transforms.LoadImaged(keys=["image", "label"]),
             transforms.AddChanneld(keys=["image", "label"]),
+            transforms.LabelToMaskd(keys="label", select_labels=[5]),
+            # transforms.DataStatsd(keys=["image", "label"]),
+            transforms.SpatialPadd(keys=["image", "label"], spatial_size=(-1, -1, args.roi_z)),
+            # transforms.DataStatsd(keys=["image", "label"]),
             transforms.Orientationd(keys=["image", "label"], axcodes="RAS"),
             transforms.Spacingd(
                 keys=["image", "label"], pixdim=(args.space_x, args.space_y, args.space_z), mode=("bilinear", "nearest")
@@ -80,14 +84,14 @@ def get_loader(args):
             transforms.ScaleIntensityRanged(
                 keys=["image"], a_min=args.a_min, a_max=args.a_max, b_min=args.b_min, b_max=args.b_max, clip=True
             ),
-            transforms.CropForegroundd(keys=["image", "label"], source_key="image"),
+            transforms.CropForegroundd(keys=["image", "label"], source_key="label", margin=args.roi_z, allow_smaller=True),
             transforms.RandCropByPosNegLabeld(
                 keys=["image", "label"],
                 label_key="label",
                 spatial_size=(args.roi_x, args.roi_y, args.roi_z),
                 pos=1,
                 neg=1,
-                num_samples=4,
+                num_samples=4,  # effective batch_size = 4
                 image_key="image",
                 image_threshold=0,
             ),
@@ -104,6 +108,8 @@ def get_loader(args):
         [
             transforms.LoadImaged(keys=["image", "label"]),
             transforms.AddChanneld(keys=["image", "label"]),
+            transforms.LabelToMaskd(keys="label", select_labels=[5]),
+            transforms.SpatialPadd(keys=["image", "label"], spatial_size=(-1, -1, args.roi_z)),
             transforms.Orientationd(keys=["image", "label"], axcodes="RAS"),
             transforms.Spacingd(
                 keys=["image", "label"], pixdim=(args.space_x, args.space_y, args.space_z), mode=("bilinear", "nearest")
@@ -111,7 +117,7 @@ def get_loader(args):
             transforms.ScaleIntensityRanged(
                 keys=["image"], a_min=args.a_min, a_max=args.a_max, b_min=args.b_min, b_max=args.b_max, clip=True
             ),
-            transforms.CropForegroundd(keys=["image", "label"], source_key="image"),
+            transforms.CropForegroundd(keys=["image", "label"], source_key="label", margin=args.roi_z, allow_smaller=True),
             transforms.ToTensord(keys=["image", "label"]),
         ]
     )
@@ -120,7 +126,9 @@ def get_loader(args):
         [
             transforms.LoadImaged(keys=["image", "label"]),
             transforms.AddChanneld(keys=["image", "label"]),
-            # transforms.Orientationd(keys=["image"], axcodes="RAS"),
+            transforms.LabelToMaskd(keys="label", select_labels=[5]),
+            transforms.SpatialPadd(keys=["image", "label"], spatial_size=(-1, -1, args.roi_z)),
+            transforms.Orientationd(keys=["image"], axcodes="RAS"),
             transforms.Spacingd(keys="image", pixdim=(args.space_x, args.space_y, args.space_z), mode="bilinear"),
             transforms.ScaleIntensityRanged(
                 keys=["image"], a_min=args.a_min, a_max=args.a_max, b_min=args.b_min, b_max=args.b_max, clip=True
